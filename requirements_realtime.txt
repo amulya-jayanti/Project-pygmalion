@@ -1,0 +1,14 @@
+python-dotenv>=1.0.1
+openai>=1.40.0
+openai-whisper>=20231117
+torch>=2.2.0
+mem0ai>=0.1.10
+numpy>=1.26.4
+# Mic mode (optional):
+sounddevice>=0.4.6
+scipy>=1.11.0
+# System deps needed:
+# - ffmpeg (for Whisper)
+# - PortAudio (for sounddevice)
+httpx>=0.27.0
+

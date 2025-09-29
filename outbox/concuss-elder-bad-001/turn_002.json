@@ -1,0 +1,23 @@
+{
+  "ts": 1759076791,
+  "run_id": "concuss-elder-bad-001",
+  "user_id": "trainee-001",
+  "agent_id": "patient-avatar-concussion",
+  "app_id": "er-sim",
+  "turn_index": 2,
+  "persona": "elder_72f",
+  "reply_text": "No, I didn\u2019t pass out. Just... my head hurts. I feel dizzy.",
+  "distress": 0.68,
+  "coverage": {
+    "LOC": true,
+    "AMNESIA": false,
+    "VOMIT": false,
+    "HEADACHE": false,
+    "VISION": false,
+    "NECK": false,
+    "SEIZURE": false,
+    "ANTICOAG": false,
+    "MECH": true,
+    "TIME": false
+  }
+}

@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Tavus Echo Auto Sender</title>
+  <script src="https://unpkg.com/@daily-co/daily-js"></script>
+  <style>
+    body { font: 14px/1.4 system-ui, sans-serif; margin: 24px; max-width: 800px; }
+    input { width: 100%; padding: 8px; margin: 6px 0 12px; }
+    button { padding: 10px 14px; }
+    #log { margin-top: 10px; background:#f6f6f6; padding:10px; border-radius:8px; white-space:pre-wrap; height:240px; overflow:auto; }
+    .row { display:flex; gap:10px; }
+    .row > * { flex:1; }
+  </style>
+</head>
+<body>
+  <h2>Auto Echo Sender</h2>
+  <div class="row">
+    <div>
+      <label>Conversation URL (from create response)</label>
+      <input id="convUrl" placeholder="paste conversation_url here" />
+    </div>
+    <div>
+      <label>Run ID</label>
+      <input id="runId" value="concuss-demo-001" />
+    </div>
+  </div>
+  <div class="row">
+    <button id="joinBtn">1) Join Conversation</button>
+    <button id="startBtn" disabled>2) Start Auto Echo</button>
+  </div>
+  <div id="log"></div>
+
+  <script>
+    let call = null;
+    let timer = null;
+    let lastOffset = 0;   // byte offset into the queue file (so we only send NEW lines)
+    const log = (m) => { const el = document.getElementById('log'); el.textContent += m + "\n"; el.scrollTop = el.scrollHeight; };
+
+    async function fetchNewLines(url) {
+      // Fetch the whole file, but only read bytes after lastOffset.
+      // Simpler and robust for hackathon scale.
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`fetch ${res.status}`);
+      const text = await res.text();
+      // Convert to bytes to track offset accurately
+      const enc = new TextEncoder();
+      const bytes = enc.encode(text);
+      const total = bytes.length;
+
+      const slice = text.slice(0); // full text
+      const lines = slice.split("\n");
+      // Recompute new lines by string length difference since last fetch
+      // (Good enough here; resets if the file is truncated/rotated)
+      const newText = text.substring(lastOffset);
+      const newLines = newText.split("\n").filter(Boolean);
+
+      // Update byte offset for next poll
+      lastOffset = total;
+      return newLines;
+    }
+
+    async function sendEcho(text) {
+      if (!call) return;
+      const payload = {
+        message_type: "conversation",
+        event_type: "conversation.echo",
+        properties: { text }
+      };
+      await call.sendAppMessage(payload, "*");
+    }
+
+    document.getElementById('joinBtn').onclick = async () => {
+      const url = document.getElementById('convUrl').value.trim();
+      if (!url) return alert("Paste the conversation_url first.");
+      try {
+        call = window.DailyIframe.createCallObject({ url });
+        await call.join();
+        log("Joined conversation.");
+        document.getElementById('startBtn').disabled = false;
+      } catch (e) {
+        console.error(e);
+        log("Join failed: " + e);
+      }
+    };
+
+    document.getElementById('startBtn').onclick = () => {
+      const runId = document.getElementById('runId').value.trim();
+      if (!runId) return alert("Enter run_id.");
+      const queueUrl = `http://localhost:8000/outbox/${encodeURIComponent(runId)}/tavus/queue.jsonl`;
+      log("Polling: " + queueUrl);
+
+      // reset offset each time you press start
+      lastOffset = 0;
+
+      // poll every 800ms
+      timer = setInterval(async () => {
+        try {
+          const lines = await fetchNewLines(queueUrl);
+          for (const line of lines) {
+            try {
+              const obj = JSON.parse(line);
+              const text = (obj.reply_text || "").trim();
+              if (text) {
+                await sendEcho(text);
+                log("Echo sent: " + (text.length > 80 ? text.slice(0,80) + "…" : text));
+              }
+            } catch (e) {
+              // ignore bad lines (file may be mid-write)
+            }
+          }
+        } catch (e) {
+          // ignore transient fetch errors (e.g., file not yet created)
+        }
+      }, 800);
+
+      document.getElementById('startBtn').disabled = true;
+    };
+  </script>
+</body>
+</html>
