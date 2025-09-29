@@ -1,13 +1,13 @@
 {
-  "ts": 1759097559,
+  "ts": 1759153393,
   "run_id": "concuss-demo-001",
   "user_id": "trainee-001",
   "agent_id": "patient-avatar-concussion",
   "app_id": "er-sim",
   "turn_index": 1,
   "persona": "elder_72f",
-  "reply_text": "I... I fell. Hit my head. It hurts. I feel dizzy. So scared.",
-  "distress": 0.88,
+  "reply_text": "I\u2026 I hit my head. It was about an hour ago. I feel dizzy and my head really hurts. I\u2019m scared.",
+  "distress": 0.8,
   "coverage": {
     "LOC": false,
     "AMNESIA": false,
